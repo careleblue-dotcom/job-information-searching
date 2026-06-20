@@ -5,8 +5,7 @@ __pycache__/
 requirements.txt
 opencode.json
 
-# 数据文件
-data/
+# 数据文件（排除 data 目录，但保留页面需要的 JSON）
 conversations/
 tests/
 images/
