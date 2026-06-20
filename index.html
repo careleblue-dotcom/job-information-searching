@@ -172,6 +172,17 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">时间范围</div>
+                    <div class="filter-options">
+                        <button :class="{active: selectedTimeRange === '全部'}" class="filter-btn" @click="selectedTimeRange = '全部'">全部时间</button>
+                        <button :class="{active: selectedTimeRange === '近一个月'}" class="filter-btn" @click="selectedTimeRange = '近一个月'">近一个月</button>
+                        <button :class="{active: selectedTimeRange === '近三个月'}" class="filter-btn" @click="selectedTimeRange = '近三个月'">近三个月</button>
+                        <button :class="{active: selectedTimeRange === '近半年'}" class="filter-btn" @click="selectedTimeRange = '近半年'">近半年</button>
+                        <button :class="{active: selectedTimeRange === '近一年'}" class="filter-btn" @click="selectedTimeRange = '近一年'">近一年</button>
+                    </div>
+                </div>
             </div>
 
             <!-- 统计信息 -->
@@ -263,6 +274,7 @@
                 const searchQuery = ref('');
                 const selectedCategory = ref('全部');
                 const selectedRegion = ref('全部');
+                const selectedTimeRange = ref('全部');
                 const selectedNav = ref('首页');
                 const showRegionDropdown = ref(false);
                 const showModal = ref(false);
@@ -285,7 +297,7 @@
                     '陕西','甘肃','青海','宁夏','新疆'
                 ];
 
-                watch([searchQuery, selectedCategory, selectedRegion], function() {
+                watch([searchQuery, selectedCategory, selectedRegion, selectedTimeRange], function() {
                     currentPage.value = 1;
                 });
 
@@ -303,6 +315,16 @@
                     return Array.from(cats);
                 });
 
+                function daysAgo(dateStr) {
+                    if (!dateStr) return Infinity;
+                    var parts = dateStr.split('-');
+                    if (parts.length !== 3) return Infinity;
+                    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                    var now = new Date();
+                    var diff = (now - d) / (1000 * 60 * 60 * 24);
+                    return Math.floor(diff);
+                }
+
                 const filteredJobs = computed(function() {
                     var result = jobs.value;
 
@@ -311,6 +333,18 @@
                     }
                     if (selectedRegion.value !== '全部') {
                         result = result.filter(function(job) { return job.region === selectedRegion.value; });
+                    }
+                    if (selectedTimeRange.value !== '全部') {
+                        result = result.filter(function(job) {
+                            var days = daysAgo(job.publish_date);
+                            switch (selectedTimeRange.value) {
+                                case '近一个月': return days >= 0 && days <= 30;
+                                case '近三个月': return days > 30 && days <= 90;
+                                case '近半年':   return days > 90 && days <= 180;
+                                case '近一年':   return days > 180 && days <= 365;
+                                default: return true;
+                            }
+                        });
                     }
                     if (searchQuery.value.trim()) {
                         var q = searchQuery.value.toLowerCase().trim();
@@ -404,6 +438,7 @@
                         searchQuery: searchQuery,
                         selectedCategory: selectedCategory,
                         selectedRegion: selectedRegion,
+                        selectedTimeRange: selectedTimeRange,
                         selectedNav: selectedNav,
                         showRegionDropdown: showRegionDropdown,
                         provinceList: provinceList,
