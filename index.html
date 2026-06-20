@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南京大学马克思主义学院就业信息网</title>
+    <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "SimSun", sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .top-bar { background: #72237E; color: white; padding: 8px 0; font-size: 12px; }
+        .top-bar-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header { background: white; border-bottom: 3px solid #72237E; padding: 20px 0; }
+        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 20px; }
+        .logo { width: 70px; height: 70px; object-fit: contain; }
+        .title-area h1 { font-size: 26px; color: #72237E; margin-bottom: 5px; }
+        .title-area p { font-size: 13px; color: #888; }
+        .main-nav { background: #72237E; }
+        .nav-content { max-width: 1200px; margin: 0 auto; display: flex; }
+        .nav-item { padding: 14px 28px; color: white; text-decoration: none; font-size: 15px; transition: all 0.3s; border-bottom: 3px solid transparent; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: rgba(255,255,255,0.15); border-bottom-color: #ffd700; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+
+        /* 筛选区 */
+        .filter-section { background: white; padding: 20px; border-radius: 6px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .filter-title { font-size: 16px; font-weight: bold; color: #72237E; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #f0eef2; }
+        .filter-group { margin-bottom: 14px; }
+        .filter-label { font-size: 13px; color: #666; margin-bottom: 8px; font-weight: bold; }
+        .filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
+        .filter-btn {
+            padding: 6px 18px; border: 1px solid #ddd; background: white; color: #444;
+            border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: #72237E; color: #72237E; }
+        .filter-btn.active { background: #72237E; color: white; border-color: #72237E; }
+
+        /* 地区下拉 */
+        .region-selector { position: relative; display: inline-block; }
+        .region-trigger {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 16px; border: 1px solid #ddd; background: white;
+            border-radius: 4px; cursor: pointer; font-size: 13px; min-width: 110px; transition: all 0.2s;
+        }
+        .region-trigger:hover { border-color: #72237E; color: #72237E; }
+        .arrow { font-size: 10px; transition: transform 0.2s; }
+        .arrow.open { transform: rotate(180deg); }
+        .region-dropdown {
+            position: absolute; top: calc(100% + 4px); left: 0;
+            background: white; border: 1px solid #e0e0e0; border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 100;
+            max-height: 300px; overflow-y: auto; width: 260px; padding: 6px 0;
+        }
+        .region-option { padding: 7px 16px; cursor: pointer; font-size: 13px; color: #333; transition: background 0.15s; }
+        .region-option:hover { background: #f5f0f7; color: #72237E; }
+        .region-option.active { background: #72237E; color: white; font-weight: bold; }
+
+        /* 搜索框 */
+        .search-box { margin-bottom: 14px; }
+        .search-box input {
+            width: 100%; padding: 11px 18px; border: 2px solid #72237E;
+            border-radius: 5px; font-size: 14px; outline: none;
+        }
+        .search-box input:focus { box-shadow: 0 0 0 3px rgba(114,35,126,0.1); }
+
+        /* 统计 */
+        .stats { background: white; padding: 14px 20px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; color: #555; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stats strong { color: #72237E; font-size: 18px; }
+
+        /* 列表 */
+        .job-list { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+        .job-item { padding: 18px 20px; border-bottom: 1px solid #f5f5f5; transition: background 0.2s; cursor: pointer; }
+        .job-item:hover { background: #faf8fa; }
+        .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .job-title { font-size: 16px; font-weight: bold; color: #333; flex: 1; margin-right: 12px; line-height: 1.4; }
+        .job-title:hover { color: #72237E; }
+        .job-category { background: #72237E; color: white; padding: 4px 12px; border-radius: 3px; font-size: 11px; white-space: nowrap; }
+        .job-meta { display: flex; gap: 18px; font-size: 13px; color: #999; margin-bottom: 8px; flex-wrap: wrap; }
+        .job-meta strong { color: #666; }
+        .job-content { font-size: 13px; color: #777; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* 空状态 */
+        .empty-state { text-align: center; padding: 50px 20px; color: #999; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: #666; }
+
+        /* 弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; border-radius: 6px; max-width: 800px; width: 92%; max-height: 82vh; overflow-y: auto; }
+        .modal-header { background: #72237E; color: white; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 18px; font-weight: bold; }
+        .modal-close { font-size: 28px; cursor: pointer; background: none; border: none; color: white; }
+        .modal-body { padding: 20px; font-size: 14px; line-height: 1.8; color: #333; }
+        .modal-body h3 { color: #72237E; margin-top: 18px; margin-bottom: 8px; font-size: 15px; }
+        .modal-body p { margin-bottom: 8px; }
+        .modal-body a { color: #72237E; text-decoration: none; }
+        .modal-body a:hover { text-decoration: underline; }
+
+        .footer { background: #333; color: white; padding: 25px 0; margin-top: 30px; text-align: center; font-size: 13px; }
+
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 20px; padding: 10px 0; }
+        .page-btn { padding: 8px 16px; border: 1px solid #ddd; background: white; color: #444; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .page-btn:hover:not(:disabled) { border-color: #72237E; color: #72237E; }
+        .page-btn.active { background: #72237E; color: white; border-color: #72237E; font-weight: bold; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部栏 -->
+        <div class="top-bar">
+            <div class="top-bar-content">
+                <div>南京大学马克思主义学院</div>
+                <div>就业信息网</div>
+            </div>
+        </div>
+
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-content">
+                <img src="images/logo.png" alt="南京大学马克思主义学院" class="logo">
+                <div class="title-area">
+                    <h1>南京大学马克思主义学院就业信息网</h1>
+                    <p>聚焦党政机关 / 选调生 / 人才引进 / 编制岗位</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主导航 -->
+        <div class="main-nav">
+            <div class="nav-content">
+                <a href="#" class="nav-item active">首页</a>
+                <a href="#" class="nav-item">招聘信息</a>
+                <a href="#" class="nav-item">选调生</a>
+                <a href="#" class="nav-item">人才引进</a>
+                <a href="#" class="nav-item">政策文件</a>
+            </div>
+        </div>
+
+        <!-- 主容器 -->
+        <div class="container">
+            <!-- 筛选区 -->
+            <div class="filter-section">
+                <div class="filter-title">筛选条件</div>
+                <div class="search-box">
+                    <input type="text" v-model="searchQuery" placeholder="搜索招聘单位、岗位名称、关键词...">
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">分类</div>
+                    <div class="filter-options">
+                        <button :class="{active: selectedCategory === '全部'}" class="filter-btn" @click="selectedCategory = '全部'">全部</button>
+                        <button v-for="cat in categories" :key="cat" :class="{active: selectedCategory === cat}" class="filter-btn" @click="selectedCategory = cat">{{ cat }}</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">地区筛选</div>
+                    <div class="region-selector" @click.stop>
+                        <div class="region-trigger" @click="showRegionDropdown = !showRegionDropdown">
+                            <span>{{ selectedRegion === '全部' ? '全部地区' : selectedRegion }}</span>
+                            <span class="arrow" :class="{open: showRegionDropdown}">&#9662;</span>
+                        </div>
+                        <div v-if="showRegionDropdown" class="region-dropdown">
+                            <div class="region-option" :class="{active: selectedRegion === '全部'}" @click="selectedRegion = '全部'; showRegionDropdown = false">全部地区</div>
+                            <div class="region-option" v-for="prov in provinceList" :key="prov" :class="{active: selectedRegion === prov}" @click="selectProvince(prov)">{{ prov }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="stats">
+                共找到 <strong>{{ filteredJobs.length }}</strong> 条招聘信息
+                <span v-if="selectedCategory !== '全部'" style="margin-left:10px;">| 分类: {{ selectedCategory }}</span>
+                <span v-if="selectedRegion !== '全部'" style="margin-left:10px;">| 地区: {{ selectedRegion }}</span>
+                <span style="margin-left:10px;">| 第 {{ currentPage }} / {{ totalPages }} 页</span>
+            </div>
+
+            <!-- 招聘列表 -->
+            <div class="job-list">
+                <div v-if="pagedJobs.length === 0" class="empty-state">
+                    <h3>暂无匹配的招聘信息</h3>
+                    <p>请尝试修改筛选条件或搜索关键词</p>
+                </div>
+                <div v-else>
+                    <div v-for="job in pagedJobs" :key="job.url || job.title" class="job-item" @click="showDetail(job)">
+                        <div class="job-header">
+                            <div class="job-title">{{ job.title || '（标题缺失）' }}</div>
+                            <div class="job-category">{{ job.category || '未分类' }}</div>
+                        </div>
+                        <div class="job-meta">
+                            <div><strong>{{ job.publish_date || '日期未知' }}</strong></div>
+                            <div v-if="job.organization"><strong>{{ job.organization }}</strong></div>
+                            <div v-if="job.region"><strong>{{ job.region }}</strong></div>
+                        </div>
+                        <div class="job-content">{{ (job.content || '').substring(0, 160) }}{{ (job.content||'').length > 160 ? '...' : '' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分页 -->
+            <div v-if="totalPages > 1" class="pagination">
+                <button class="page-btn" :disabled="currentPage <= 1" @click="goPage(currentPage - 1)">&laquo; 上一页</button>
+                <button v-for="p in pageNumbers" :key="p" :class="{active: p === currentPage}" class="page-btn" @click="goPage(p)">{{ p }}</button>
+                <button class="page-btn" :disabled="currentPage >= totalPages" @click="goPage(currentPage + 1)">下一页 &raquo;</button>
+            </div>
+        </div>
+
+        <!-- 模态框 -->
+        <div class="modal" :class="{show: showModal}" @click.self="showModal = false">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">{{ selectedJob.title }}</div>
+                    <button class="modal-close" @click="showModal = false">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <h3>基本信息</h3>
+                    <p><strong>发布日期:</strong> {{ selectedJob.publish_date || '未知' }}</p>
+                    <p><strong>招聘单位:</strong> {{ selectedJob.organization || '未知' }}</p>
+                    <p><strong>栏目分类:</strong> {{ selectedJob.category || '未知' }}</p>
+                    <p v-if="selectedJob.region"><strong>地区:</strong> {{ selectedJob.region }}</p>
+                    <p><strong>原始链接:</strong> <a :href="selectedJob.url" target="_blank">{{ selectedJob.url }}</a></p>
+                    <h3>招聘详情</h3>
+                    <div style="white-space: pre-wrap;">{{ selectedJob.content || '暂无详情内容' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>南京大学马克思主义学院 就业信息网</p>
+            <p style="margin-top: 8px; font-size: 12px; color: #999;">&copy; 2026 求知鹿</p>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const jobs = ref([]);
+                const searchQuery = ref('');
+                const selectedCategory = ref('全部');
+                const selectedRegion = ref('全部');
+                const showRegionDropdown = ref(false);
+                const showModal = ref(false);
+                const selectedJob = ref({});
+
+                const provinceList = [
+                    '北京','天津','河北','山西','内蒙古',
+                    '辽宁','吉林','黑龙江',
+                    '上海','江苏','浙江','安徽','福建','江西','山东',
+                    '河南','湖北','湖南','广东','广西','海南',
+                    '重庆','四川','贵州','云南','西藏',
+                    '陕西','甘肃','青海','宁夏','新疆'
+                ];
+
+                const selectProvince = function(prov) {
+                    selectedRegion.value = prov;
+                    showRegionDropdown.value = false;
+                };
+
+                const categories = computed(function() {
+                    var cats = new Set();
+                    jobs.value.forEach(function(job) {
+                        var c = job.category;
+                        if (c) cats.add(c);
+                    });
+                    return Array.from(cats);
+                });
+
+                const filteredJobs = computed(function() {
+                    var result = jobs.value;
+
+                    if (selectedCategory.value !== '全部') {
+                        result = result.filter(function(job) { return job.category === selectedCategory.value; });
+                    }
+                    if (selectedRegion.value !== '全部') {
+                        result = result.filter(function(job) { return job.region === selectedRegion.value; });
+                    }
+                    if (searchQuery.value.trim()) {
+                        var q = searchQuery.value.toLowerCase().trim();
+                        result = result.filter(function(job) {
+                            var t = (job.title || '').toLowerCase();
+                            var o = (job.organization || '').toLowerCase();
+                            var c = (job.content || '').toLowerCase();
+                            return t.indexOf(q) !== -1 || o.indexOf(q) !== -1 || c.indexOf(q) !== -1;
+                        });
+                    }
+
+                    return result;
+                });
+
+                const pageSize = 20;
+                const currentPage = ref(1);
+
+                const totalPages = computed(function() {
+                    return Math.ceil(filteredJobs.value.length / pageSize) || 1;
+                });
+
+                const pagedJobs = computed(function() {
+                    var start = (currentPage.value - 1) * pageSize;
+                    var end = start + pageSize;
+                    return filteredJobs.value.slice(start, end);
+                });
+
+                const pageNumbers = computed(function() {
+                    var pages = [];
+                    var total = totalPages.value;
+                    var cur = currentPage.value;
+                    var start = Math.max(1, cur - 2);
+                    var end = Math.min(total, cur + 2);
+                    if (end - start < 4) {
+                        if (start === 1) { end = Math.min(total, start + 4); }
+                        else { start = Math.max(1, end - 4); }
+                    }
+                    for (var i = start; i <= end; i++) { pages.push(i); }
+                    return pages;
+                });
+
+                const goPage = function(p) {
+                    if (p >= 1 && p <= totalPages.value) {
+                        currentPage.value = p;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                };
+
+                const showDetail = function(job) {
+                    selectedJob.value = job;
+                    showModal.value = true;
+                };
+
+                onMounted(async function() {
+                    document.addEventListener('click', function() {
+                        showRegionDropdown.value = false;
+                    });
+
+                    // 筛选条件变化时重置到第一页
+                    watch([searchQuery, selectedCategory, selectedRegion], function() {
+                        currentPage.value = 1;
+                    });
+
+                    try {
+                        console.log('[加载] 正在获取数据...');
+                        var response = await fetch('data/all_jobs.json?_v=' + Date.now());
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+                        var data = await response.json();
+                        console.log('[加载] 获取到 ' + data.length + ' 条原始数据');
+
+                        // 补充缺失的region字段
+                        data = data.map(function(job) {
+                            if (!job.region || job.region === '') {
+                                var text = (job.title || '') + ' ' + (job.content || '') + ' ' + (job.source || '');
+                                for (var i = 0; i < provinceList.length; i++) {
+                                    if (text.indexOf(provinceList[i]) !== -1) {
+                                        job.region = provinceList[i];
+                                        break;
+                                    }
+                                }
+                                if (!job.region) job.region = '全国';
+                            }
+                            return job;
+                        });
+
+                        jobs.value = data;
+                        console.log('[加载] 数据已加载完成，共 ' + data.length + ' 条');
+                    } catch (err) {
+                        console.error('[错误] 加载数据失败:', err);
+                        alert('数据加载失败，请检查网络连接后刷新页面');
+                    }
+                });
+
+                    return {
+                        jobs: jobs,
+                        searchQuery: searchQuery,
+                        selectedCategory: selectedCategory,
+                        selectedRegion: selectedRegion,
+                        showRegionDropdown: showRegionDropdown,
+                        provinceList: provinceList,
+                        showModal: showModal,
+                        selectedJob: selectedJob,
+                        categories: categories,
+                        filteredJobs: filteredJobs,
+                        currentPage: currentPage,
+                        totalPages: totalPages,
+                        pagedJobs: pagedJobs,
+                        pageNumbers: pageNumbers,
+                        showDetail: showDetail,
+                        selectProvince: selectProvince,
+                        goPage: goPage
+                    };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
