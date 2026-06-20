@@ -134,11 +134,11 @@
         <!-- 主导航 -->
         <div class="main-nav">
             <div class="nav-content">
-                <a href="#" class="nav-item active">首页</a>
-                <a href="#" class="nav-item">招聘信息</a>
-                <a href="#" class="nav-item">选调生</a>
-                <a href="#" class="nav-item">人才引进</a>
-                <a href="#" class="nav-item">政策文件</a>
+                <a href="#" :class="['nav-item', {active: selectedNav === '首页'}]" @click.prevent="switchNav('首页')">首页</a>
+                <a href="#" :class="['nav-item', {active: selectedNav === '招聘信息'}]" @click.prevent="switchNav('招聘信息')">招聘信息</a>
+                <a href="#" :class="['nav-item', {active: selectedNav === '选调生'}]" @click.prevent="switchNav('选调生')">选调生</a>
+                <a href="#" :class="['nav-item', {active: selectedNav === '人才引进'}]" @click.prevent="switchNav('人才引进')">人才引进</a>
+                <a href="#" :class="['nav-item', {active: selectedNav === '政策文件'}]" @click.prevent="switchNav('政策文件')">政策文件</a>
             </div>
         </div>
 
@@ -176,10 +176,18 @@
 
             <!-- 统计信息 -->
             <div class="stats">
-                共找到 <strong>{{ filteredJobs.length }}</strong> 条招聘信息
-                <span v-if="selectedCategory !== '全部'" style="margin-left:10px;">| 分类: {{ selectedCategory }}</span>
-                <span v-if="selectedRegion !== '全部'" style="margin-left:10px;">| 地区: {{ selectedRegion }}</span>
-                <span style="margin-left:10px;">| 第 {{ currentPage }} / {{ totalPages }} 页</span>
+                <template v-if="loading">
+                    正在加载数据... <strong>请稍候</strong>
+                </template>
+                <template v-else-if="loadError">
+                    {{ loadError }}
+                </template>
+                <template v-else>
+                    共找到 <strong>{{ filteredJobs.length }}</strong> 条招聘信息
+                    <span v-if="selectedCategory !== '全部'" style="margin-left:10px;">| 分类: {{ selectedCategory }}</span>
+                    <span v-if="selectedRegion !== '全部'" style="margin-left:10px;">| 地区: {{ selectedRegion }}</span>
+                    <span style="margin-left:10px;">| 第 {{ currentPage }} / {{ totalPages }} 页</span>
+                </template>
             </div>
 
             <!-- 招聘列表 -->
@@ -244,13 +252,29 @@
 
         createApp({
             setup() {
+                const navMap = {
+                    '招聘信息': '招聘信息',
+                    '选调生': '选调生',
+                    '人才引进': '人才引进',
+                    '政策文件': null,
+                };
+
                 const jobs = ref([]);
                 const searchQuery = ref('');
                 const selectedCategory = ref('全部');
                 const selectedRegion = ref('全部');
+                const selectedNav = ref('首页');
                 const showRegionDropdown = ref(false);
                 const showModal = ref(false);
                 const selectedJob = ref({});
+                const loading = ref(true);
+                const loadError = ref('');
+
+                const switchNav = function(name) {
+                    selectedNav.value = name;
+                    var cat = navMap[name];
+                    selectedCategory.value = cat || '全部';
+                };
 
                 const provinceList = [
                     '北京','天津','河北','山西','内蒙古',
@@ -260,6 +284,10 @@
                     '重庆','四川','贵州','云南','西藏',
                     '陕西','甘肃','青海','宁夏','新疆'
                 ];
+
+                watch([searchQuery, selectedCategory, selectedRegion], function() {
+                    currentPage.value = 1;
+                });
 
                 const selectProvince = function(prov) {
                     selectedRegion.value = prov;
@@ -341,21 +369,13 @@
                         showRegionDropdown.value = false;
                     });
 
-                    // 筛选条件变化时重置到第一页
-                    watch([searchQuery, selectedCategory, selectedRegion], function() {
-                        currentPage.value = 1;
-                    });
-
                     try {
-                        console.log('[加载] 正在获取数据...');
                         var response = await fetch('data/all_jobs.json?_v=' + Date.now());
                         if (!response.ok) {
                             throw new Error('HTTP ' + response.status);
                         }
                         var data = await response.json();
-                        console.log('[加载] 获取到 ' + data.length + ' 条原始数据');
 
-                        // 补充缺失的region字段
                         data = data.map(function(job) {
                             if (!job.region || job.region === '') {
                                 var text = (job.title || '') + ' ' + (job.content || '') + ' ' + (job.source || '');
@@ -371,10 +391,11 @@
                         });
 
                         jobs.value = data;
-                        console.log('[加载] 数据已加载完成，共 ' + data.length + ' 条');
                     } catch (err) {
+                        loadError.value = '数据加载失败，请检查网络连接后刷新页面';
                         console.error('[错误] 加载数据失败:', err);
-                        alert('数据加载失败，请检查网络连接后刷新页面');
+                    } finally {
+                        loading.value = false;
                     }
                 });
 
@@ -383,10 +404,13 @@
                         searchQuery: searchQuery,
                         selectedCategory: selectedCategory,
                         selectedRegion: selectedRegion,
+                        selectedNav: selectedNav,
                         showRegionDropdown: showRegionDropdown,
                         provinceList: provinceList,
                         showModal: showModal,
                         selectedJob: selectedJob,
+                        loading: loading,
+                        loadError: loadError,
                         categories: categories,
                         filteredJobs: filteredJobs,
                         currentPage: currentPage,
@@ -395,7 +419,8 @@
                         pageNumbers: pageNumbers,
                         showDetail: showDetail,
                         selectProvince: selectProvince,
-                        goPage: goPage
+                        goPage: goPage,
+                        switchNav: switchNav,
                     };
             }
         }).mount('#app');

@@ -1,18 +1,15 @@
-# Python 爬虫相关
-*.py
+# Python 缓存
 *.pyc
 __pycache__/
-requirements.txt
-opencode.json
 
-# 数据文件（保留页面需要的 JSON 和图片）
-conversations/
-tests/
-
-# 工作文档
-*.md
-!README.md
+# 数据文件（排除生成的 JSON，保留 urls.json）
+data/all_jobs*.json
+data/central_gov_jobs_full.json
+data/jszzb_test.json
 
 # 系统文件
 .DS_Store
 .workbuddy/
+
+# 对话日志
+conversations/

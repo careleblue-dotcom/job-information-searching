@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "crawler": {
+      "description": "运行爬虫（中央平台/JSZZB/批量）和数据清理（审查/去重/修复）。涉及 crawler_central_gov.py, crawler_jszzb.py, batch_crawler.py, cleanup.py",
+      "mode": "subagent"
+    }
+  },
+  "plugin": [
+    "opencode-autosave-conversation"
+  ]
+}
