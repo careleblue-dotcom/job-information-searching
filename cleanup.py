@@ -3,9 +3,11 @@ import json
 import re
 import shutil
 import os
+import unicodedata
 from collections import Counter
 from datetime import datetime
-from shared import extract_category, logger
+from config import PROVINCES, DEFAULT_SOURCE
+from shared import extract_category, logger, _dedupe, _ensure_source
 
 DATA_FILE = 'data/all_jobs.json'
 
@@ -23,12 +25,18 @@ def load():
 
 
 def save(data):
+    _ensure_source(data)
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     print(f"\n已保存 {len(data)} 条到 {DATA_FILE}")
 
 
 # ─── 审计（只读） ───────────────────────────────────
+
+def _is_cjk(ch):
+    """判断字符是否属于 CJK 统一汉字区间（0x4E00–0x9FFF）。"""
+    return 0x4E00 <= ord(ch) <= 0x9FFF
+
 
 def audit(data):
     print(f'总数据: {len(data)}条\n')
@@ -72,10 +80,18 @@ def audit(data):
     mojibake = []
     for i, j in enumerate(data):
         c = (j.get('content') or '')
-        common = set(
-            '\t\n\r ，。、：；！？""''（）《》【】—…··0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,.;:!?()[]-+/=%&@#$*^<>`~\u4e00-\u9fff\uff09\uff08\u3001\u300a\u300b')
-        ratio = sum(1 for ch in c if ch not in common) / max(len(c), 1)
-        if ratio > 0.2 and len(c) > 20:
+        if len(c) <= 20:
+            continue
+        # 乱码判定：计算非"常见正常字符"占比。
+        # 正常字符包括：CJK汉字、中文标点、ASCII可打印字符。
+        # 注意：之前用 set('\u4e00-\u9fff') 是 bug（set 字面量不会展开为范围），
+        # 这里改用区间判断函数。
+        normal = 0
+        for ch in c:
+            if _is_cjk(ch) or ch.isascii() and ch.isprintable() or unicodedata.category(ch).startswith('P'):
+                normal += 1
+        ratio = 1 - normal / max(len(c), 1)
+        if ratio > 0.2:
             mojibake.append((i, j.get('title', '')[:50], ratio))
     print('\n=== 可能乱码内容 ===')
     for i, t, r in mojibake:
@@ -86,18 +102,6 @@ def audit(data):
 
 
 # ─── 第一轮清理 ───────────────────────────────────
-
-PROVINCES = {
-    '北京': '北京', '天津': '天津', '河北': '河北', '山西': '山西',
-    '内蒙古': '内蒙古', '辽宁': '辽宁', '吉林': '吉林', '黑龙江': '黑龙江',
-    '上海': '上海', '江苏': '江苏', '浙江': '浙江', '安徽': '安徽',
-    '福建': '福建', '江西': '江西', '山东': '山东', '河南': '河南',
-    '湖北': '湖北', '湖南': '湖南', '广东': '广东', '广西': '广西',
-    '海南': '海南', '重庆': '重庆', '四川': '四川', '贵州': '贵州',
-    '云南': '云南', '西藏': '西藏', '陕西': '陕西', '甘肃': '甘肃',
-    '青海': '青海', '宁夏': '宁夏', '新疆': '新疆'
-}
-
 
 def round1(data):
     backup()
@@ -125,21 +129,22 @@ def round1(data):
 
     print(f'去重后: {len(deduped)} 条 (删除 {len(data) - len(deduped)} 条)')
 
+    # 地区修复：优先匹配 source，再匹配标题+正文
     for j in deduped:
         src = (j.get('source') or '')
         title = (j.get('title') or '')
         content = (j.get('content') or '')
         combined = src + ' ' + title + ' ' + content
         matched = False
-        for name, val in PROVINCES.items():
+        for name in PROVINCES:
             if name in src:
-                j['region'] = val
+                j['region'] = name
                 matched = True
                 break
         if not matched:
-            for name, val in PROVINCES.items():
+            for name in PROVINCES:
                 if name in combined:
-                    j['region'] = val
+                    j['region'] = name
                     matched = True
                     break
         if not matched:
@@ -163,14 +168,8 @@ def round2(data):
     backup()
     print(f'当前数据: {len(data)} 条')
 
-    seen = set()
-    deduped = []
-    for j in data:
-        t = (j.get('title') or '').strip()
-        if t in seen:
-            continue
-        seen.add(t)
-        deduped.append(j)
+    # 标题去重复用 shared._dedupe（URL + 标题归一化双重判断）
+    deduped = _dedupe(data)
     print(f'标题去重后: {len(deduped)} 条 (删除 {len(data) - len(deduped)} 条)')
 
     final = []
