@@ -14,6 +14,10 @@ BASE_URL = CENTRAL_GOV["BASE_URL"]
 CATEGORIES = CENTRAL_GOV["CATEGORIES"]
 OUTPUT_FILE = OUTPUT_FILES["central_gov"]
 
+# 从 BASE_URL 派生 host（避免在拼接 URL 时硬编码 IP）
+_SCHEME, _NETLOC = re.match(r'(https?://)([^/]+)', BASE_URL).group(1), re.match(r'https?://([^/]+)', BASE_URL).group(1)
+HOST_ORIGIN = f"{_SCHEME}{_NETLOC}"  # 如 http://114.255.111.180
+
 
 def crawl_category(category_code, category_name, limit=20):
     logger.info('开始爬取栏目: %s (%s)', category_name, category_code)
@@ -60,7 +64,7 @@ def crawl_category(category_code, category_name, limit=20):
         elif href.startswith('./'):
             full_url = f"{category_url}/{href[2:]}"
         elif href.startswith('/'):
-            full_url = f"http://114.255.111.180{href}"
+            full_url = f"{HOST_ORIGIN}{href}"
         else:
             full_url = f"{category_url}/{href}"
 

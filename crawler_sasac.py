@@ -11,11 +11,17 @@ import re
 from config import HEADERS, DELAY
 from shared import fetch_page, parse_date, save_and_merge, crawl_job_detail, logger
 
+# 站点域名常量（避免在拼接 URL 时反复硬编码字符串）
+SASAC_HOST = "http://wap.sasac.gov.cn"
+PUBLIC_JOB_HOST = "http://www.job.mohrss.gov.cn"
+
 # 国务院国资委招聘专栏
-SASAC_URL = "http://wap.sasac.gov.cn/n2588035/n2588325/n2588350/index.html"
+SASAC_URL = f"{SASAC_HOST}/n2588035/n2588325/n2588350/index.html"
 
 # 中国公共招聘网 - 中央企业招聘应届高校毕业生信息公开
-PUBLIC_JOB_URL = "http://www.job.mohrss.gov.cn/qyzp/index.jhtml"
+PUBLIC_JOB_URL = f"{PUBLIC_JOB_HOST}/qyzp/index.jhtml"
+# 公共招聘网列表页路径前缀，用于拼接相对链接
+PUBLIC_JOB_LIST_PREFIX = f"{PUBLIC_JOB_HOST}/qyzp"
 
 
 def crawl_sasac():
@@ -45,9 +51,9 @@ def crawl_sasac():
             if href.startswith('http'):
                 full_url = href
             elif href.startswith('/'):
-                full_url = f"http://wap.sasac.gov.cn{href}"
+                full_url = f"{SASAC_HOST}{href}"
             else:
-                full_url = f"http://wap.sasac.gov.cn/n2588035/n2588325/n2588350/{href}"
+                full_url = f"{SASAC_HOST}/n2588035/n2588325/n2588350/{href}"
 
             job_links.append({'url': full_url, 'title': text})
 
@@ -127,11 +133,11 @@ def crawl_public_job():
         if href.startswith('http'):
             full_url = href
         elif href.startswith('/'):
-            full_url = f"http://www.job.mohrss.gov.cn{href}"
+            full_url = f"{PUBLIC_JOB_HOST}{href}"
         elif href.startswith('./'):
-            full_url = f"http://www.job.mohrss.gov.cn/qyzp/{href[2:]}"
+            full_url = f"{PUBLIC_JOB_LIST_PREFIX}/{href[2:]}"
         else:
-            full_url = f"http://www.job.mohrss.gov.cn/qyzp/{href}"
+            full_url = f"{PUBLIC_JOB_LIST_PREFIX}/{href}"
 
         # 提取日期（通常在链接旁边的文本中）
         date_text = ""
