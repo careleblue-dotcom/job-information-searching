@@ -1,0 +1,15 @@
+# Python 缓存
+*.pyc
+__pycache__/
+
+# 数据文件（排除生成的 JSON，保留 urls.json）
+data/all_jobs*.json
+data/central_gov_jobs_full.json
+data/jszzb_test.json
+
+# 系统文件
+.DS_Store
+.workbuddy/
+
+# 对话日志
+conversations/
