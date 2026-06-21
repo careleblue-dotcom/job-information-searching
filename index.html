@@ -133,13 +133,10 @@
 
         <!-- 主导航 -->
         <div class="main-nav">
-            <div class="nav-content">
-                <a href="#" :class="['nav-item', {active: selectedNav === '首页'}]" @click.prevent="switchNav('首页')">首页</a>
-                <a href="#" :class="['nav-item', {active: selectedNav === '招聘信息'}]" @click.prevent="switchNav('招聘信息')">招聘信息</a>
-                <a href="#" :class="['nav-item', {active: selectedNav === '选调生'}]" @click.prevent="switchNav('选调生')">选调生</a>
-                <a href="#" :class="['nav-item', {active: selectedNav === '人才引进'}]" @click.prevent="switchNav('人才引进')">人才引进</a>
-                <a href="#" :class="['nav-item', {active: selectedNav === '政策文件'}]" @click.prevent="switchNav('政策文件')">政策文件</a>
-            </div>
+	            <div class="nav-content">
+	                <a href="#" :class="['nav-item', {active: selectedNav === '首页'}]" @click.prevent="switchNav('首页')">首页</a>
+	                <a href="#" :class="['nav-item', {active: selectedNav === '招聘信息'}]" @click.prevent="switchNav('招聘信息')">招聘信息</a>
+	            </div>
         </div>
 
         <!-- 主容器 -->
@@ -264,10 +261,8 @@
         createApp({
             setup() {
                 const navMap = {
+                    '首页': null,
                     '招聘信息': '招聘信息',
-                    '选调生': '选调生',
-                    '人才引进': '人才引进',
-                    '政策文件': null,
                 };
 
                 const jobs = ref([]);
@@ -339,9 +334,9 @@
                             var days = daysAgo(job.publish_date);
                             switch (selectedTimeRange.value) {
                                 case '近一个月': return days >= 0 && days <= 30;
-                                case '近三个月': return days > 30 && days <= 90;
-                                case '近半年':   return days > 90 && days <= 180;
-                                case '近一年':   return days > 180 && days <= 365;
+                                case '近三个月': return days >= 0 && days <= 90;
+                                case '近半年':   return days >= 0 && days <= 180;
+                                case '近一年':   return days >= 0 && days <= 365;
                                 default: return true;
                             }
                         });
