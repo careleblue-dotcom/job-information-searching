@@ -26,10 +26,19 @@ jobs:
       - name: 配置 GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: 构建发布产物（dist）
+        run: |
+          mkdir -p dist/data
+          cp index.html dist/
+          cp data/all_jobs.json dist/data/
+          cp -r vendor dist/
+          echo "dist 内容："
+          ls -R dist
+
       - name: 上传构建产物
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./
+          path: ./dist
 
       - name: 部署到 GitHub Pages
         id: deployment

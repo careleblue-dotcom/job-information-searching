@@ -7,6 +7,13 @@ data/all_jobs*.json
 data/central_gov_jobs_full.json
 data/jszzb_test.json
 
+# 增量爬取状态（首次运行自动生成，按需提交）
+data/seen_urls.json
+
+# 运行产物
+logs/
+dist/
+
 # 系统文件
 .DS_Store
 .workbuddy/
