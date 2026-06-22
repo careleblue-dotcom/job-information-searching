@@ -4,6 +4,10 @@
     "crawler": {
       "description": "运行爬虫（中央平台/JSZZB/批量）和数据清理（审查/去重/修复）。涉及 crawler_central_gov.py, crawler_jszzb.py, batch_crawler.py, cleanup.py",
       "mode": "subagent"
+    },
+    "teacher": {
+      "description": "项目全栈讲解老师。当用户说看不懂/教教我/解释/想学时触发。从 index.html(Vue3前端) 到 Python爬虫 到数据清洗到部署，逐行讲解。适合新手学习",
+      "mode": "subagent"
     }
   },
   "plugin": [

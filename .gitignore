@@ -1,22 +1,9 @@
-# Python 缓存
-*.pyc
 __pycache__/
-
-# 数据文件（排除生成的 JSON，保留 urls.json）
-data/all_jobs*.json
-data/central_gov_jobs_full.json
-data/jszzb_test.json
-
-# 增量爬取状态（首次运行自动生成，按需提交）
-data/seen_urls.json
-
-# 运行产物
-logs/
-dist/
-
-# 系统文件
-.DS_Store
+*.pyc
 .workbuddy/
-
-# 对话日志
-conversations/
+*.html
+!index.html
+data/*.json
+!data/urls.json
+.DS_Store
+Thumbs.db
