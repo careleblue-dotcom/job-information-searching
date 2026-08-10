@@ -17,3 +17,6 @@ Thumbs.db
 logs/
 .pytest_cache/
 nul
+# AI 工具与对话记录（不提交）
+conversations/
+.opencode/node_modules/
