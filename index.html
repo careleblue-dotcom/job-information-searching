@@ -374,6 +374,16 @@
                         });
                     }
 
+                    // 按发布日期从新到旧排序；日期为空/无法解析的沉底
+                    result = result.slice().sort(function(a, b) {
+                        var da = (a.publish_date || '').replace(/-/g, '');
+                        var db = (b.publish_date || '').replace(/-/g, '');
+                        if (!da && !db) return 0;
+                        if (!da) return 1;
+                        if (!db) return -1;
+                        return db.localeCompare(da);   // YYYYMMDD 字符串比较，降序=新在前
+                    });
+
                     return result;
                 });
 
