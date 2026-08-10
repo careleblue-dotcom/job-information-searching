@@ -5,5 +5,15 @@ __pycache__/
 !index.html
 data/*.json
 !data/urls.json
+!data/all_jobs.json
+!data/_meta.json
+data/all_jobs_backup_*.json
+# 增量状态文件需提交进 git，跨 CI 运行持久化（否则每次全量重爬）
+!data/seen_urls.json
+!data/failed_urls.json
+data/central_gov_jobs_full.json
 .DS_Store
 Thumbs.db
+logs/
+.pytest_cache/
+nul

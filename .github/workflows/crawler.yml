@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +28,58 @@ jobs:
         run: |
           python -m pytest tests/ -q
 
-      - name: 运行爬虫
+      - name: 运行列表页发现爬虫（数据持续增长核心）
         run: |
+          python crawler_discover.py
           python batch_crawler.py
-          python run_crawler_full.py
+          python crawler_university_marx.py
           python cleanup.py all
 
-      - name: 提交数据变更
+      - name: 提交数据与增量状态
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 提交数据 + 增量状态（seen_urls/failed_urls）+ meta 保活字段
           git add data/
           git diff --quiet && git diff --staged --quiet || git commit -m "chore: 自动更新招聘数据 $(date +'%Y-%m-%d')"
           git push
+
+      - name: 健康度检查（异常源时创建 issue 告警）
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('logs/crawl_report.json', 'utf8'));
+            } catch (e) {
+              console.log('未找到爬取报告，跳过告警检查');
+              return;
+            }
+            const bad = report.bad_sources || [];
+            if (bad.length === 0 && report.health !== 'error') {
+              console.log(`全部数据源正常（发现 ${report.total_discovered}，新增 ${report.total_new}）`);
+              return;
+            }
+            const title = `[爬虫告警] ${report.run_time} 有 ${bad.length} 个数据源异常`;
+            const body = `## 爬取报告摘要
+
+- 运行时间: \`${report.run_time}\`
+- 健康度: \`${report.health}\`
+- 发现链接: ${report.total_discovered}
+- 新增入库: ${report.total_new}
+- 失败: ${report.total_failed}
+- 异常源: ${bad.join('、') || '（整体 error）'}
+
+### 处理建议
+1. 访问异常源的列表页，确认站点是否改版/反爬升级
+2. 若 HTML 结构变化，更新 \`config.py\` 中 \`LIST_SOURCES\` 对应源的 \`url_regex\`/选择器配置
+3. 修复后手动触发 \`workflow_dispatch\` 重跑验证`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+            });
