@@ -2,7 +2,9 @@ name: 定时爬虫
 
 on:
   schedule:
-    - cron: '0 8 * * *'
+    # GitHub Actions 的 cron 使用 UTC：UTC 18:00 = 北京时间次日凌晨 2:00。
+    # 凌晨跑完增量爬取+部署，用户早上打开页面时数据已是最新。
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
