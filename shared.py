@@ -167,10 +167,17 @@ def parse_job_html(html: str, url: str, source_name: str = "") -> Optional[dict]
                         break
 
         publish_date = ""
-        date_match = re.search(r'/(\d{8})/', url)
+        # 优先 URL 文件名中的 tYYYYMMDD（北京人社局/中央机关/山西等政府站通用格式，
+        # 如 t20260722_4777238.html 即 2026-07-22 发布；比全文搜日期更可靠）
+        date_match = re.search(r'/t(\d{8})', url)
         if date_match:
             date_str = date_match.group(1)
             publish_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+        else:
+            date_match = re.search(r'/(\d{8})/', url)
+            if date_match:
+                date_str = date_match.group(1)
+                publish_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
 
         if not publish_date:
             for selector in ['.date', '#date', 'span.date', 'div.date', 'p.date', '.time', '#time',
@@ -196,7 +203,9 @@ def parse_job_html(html: str, url: str, source_name: str = "") -> Optional[dict]
                     break
 
         content = ""
-        for selector in ['div.content', '#content', 'div.article', 'div[class*="content"]', 'div[class*="article"]', 'body']:
+        for selector in ['div.content', '#content', 'div.article', 'div[class*="content"]',
+                         'div[class*="article"]', '.view', '.TRS_Editor',
+                         'div[class*="zoom"]', '.article-content', 'body']:
             elem = soup.select_one(selector)
             if elem:
                 for tag in elem.find_all(['nav', 'aside', 'script', 'style']):

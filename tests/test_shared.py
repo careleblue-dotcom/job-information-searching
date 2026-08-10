@@ -143,6 +143,30 @@ def test_parse_empty_html():
         assert 'title' in job and 'source' in job
 
 
+def test_parse_detail_date_from_url_t_format():
+    """URL 文件名含 tYYYYMMDD（北京人社局/中央机关等政府站格式）应优先用作发布日期。
+    避免 fallback 到全文搜日期时误抓页面里的其他日期（如表单默认值/截止日期）。"""
+    html = _read_fixture('detail_sample.html')
+    job = parse_job_html(
+        html,
+        'https://rsj.beijing.gov.cn/xxgk/gkzp/202607/t20260722_4777238.html',
+        '北京市人社局',
+    )
+    assert job['publish_date'] == '2026-07-22'
+
+
+def test_parse_detail_uses_view_container():
+    """正文提取应命中 .view 容器，而不是 fallback 到 body 抓导航噪声。"""
+    html = ('<html><body>'
+            '<nav>访问我的专属空间无障碍高级搜索</nav>'
+            '<div class="view">北京科技职业大学招聘公告，这里是正文内容，正文内容。</div>'
+            '</body></html>')
+    job = parse_job_html(html, 'https://rsj.beijing.gov.cn/xxgk/gkzp/202607/t20260722_4777238.html', '北京市人社局')
+    assert job is not None
+    assert '正文内容' in job['content']
+    assert '专属空间' not in job['content']   # 导航噪声不应进入正文
+
+
 # ─── crawl_job_detail（monkeypatch 网络层）──────────
 
 def test_crawl_job_detail_uses_fetch_and_parse(monkeypatch):
