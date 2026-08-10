@@ -65,7 +65,13 @@ def crawl_jszzb(max_pages=3):
         for i, item in enumerate(unique_links[:limit], 1):
             logger.info('[%d/%d] 处理: %s', i, min(limit, len(unique_links)), item['title'][:50])
 
-            job_data = crawl_job_detail(item['url'], '江苏省委组织部官网')
+            job_data = crawl_job_detail(
+                item['url'], '江苏省委组织部官网',
+                partial_meta={
+                    'title': item.get('title'),
+                    'category': '选调生/公务员',
+                },
+            )
             if job_data:
                 job_data['category'] = '选调生/公务员'
                 jobs.append(job_data)

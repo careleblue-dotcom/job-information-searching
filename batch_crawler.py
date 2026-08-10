@@ -42,15 +42,21 @@ def main():
         print("\n[错误] 没有加载到任何URL，请检查 data/urls.json 文件")
         return
 
-    jobs = batch_crawl(
+    result = batch_crawl(
         urls_with_source,
-        save_interval=10,
+        save_interval=5,
         output_file=OUTPUT_FILES["all_jobs"],
         use_seen=not args.full,
     )
 
-    if jobs:
+    jobs = result.get('ok_jobs', [])
+    failed_count = result.get('failed_count', 0)
+    failed_queue = result.get('failed_queue_size', 0)
+    status = result.get('status', 'unknown')
+
+    if jobs or failed_count:
         print(f"\n[完成] 本次共爬取 {len(jobs)} 条数据")
+        print(f"  状态: {status}, 失败: {failed_count} 条, 失败队列待重试: {failed_queue} 条")
     else:
         print("\n[提示] 未获取到新数据（可能增量模式下所有 URL 已爬过，可用 --full 强制重爬）")
 

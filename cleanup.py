@@ -59,7 +59,9 @@ def audit(data):
 
     print('\n=== 内容过短(<20字) ===')
     for i in short:
-        print(f'  [{i}] title="{j.get("title","")[:40]}" content_len={len(c.strip())}')
+        item = data[i]
+        c = (item.get('content') or '')
+        print(f'  [{i}] title="{item.get("title","")[:40]}" content_len={len(c.strip())}')
 
     cats = Counter(j.get('category') or '未知' for j in data)
     print('\n=== 分类分布 ===')

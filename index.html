@@ -195,6 +195,12 @@
                     <span v-if="selectedCategory !== '全部'" style="margin-left:10px;">| 分类: {{ selectedCategory }}</span>
                     <span v-if="selectedRegion !== '全部'" style="margin-left:10px;">| 地区: {{ selectedRegion }}</span>
                     <span style="margin-left:10px;">| 第 {{ currentPage }} / {{ totalPages }} 页</span>
+                    <span v-if="meta.last_updated" style="margin-left:10px; color:#999; font-size:12px;">
+                        | 数据更新于 <strong style="font-size:13px;">{{ formatRelative(meta.last_updated) }}</strong>
+                        <span v-if="meta.last_crawl_errors > 0" style="color:#c0392b; margin-left:4px;">
+                            ({{ meta.last_crawl_errors }} 条抓取失败)
+                        </span>
+                    </span>
                 </template>
             </div>
 
@@ -266,6 +272,7 @@
                 };
 
                 const jobs = ref([]);
+                const meta = ref({});   // 来自 data/_meta.json：last_updated/total_jobs/schema_version
                 const searchQuery = ref('');
                 const selectedCategory = ref('全部');
                 const selectedRegion = ref('全部');
@@ -318,6 +325,22 @@
                     var now = new Date();
                     var diff = (now - d) / (1000 * 60 * 60 * 24);
                     return Math.floor(diff);
+                }
+
+                // 把 'YYYY-MM-DD HH:MM:SS' 格式化成"X 分钟前"等相对时间
+                function formatRelative(timeStr) {
+                    if (!timeStr) return '';
+                    var m = String(timeStr).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+                    if (!m) return timeStr;
+                    var t = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+                    if (isNaN(t)) return timeStr;
+                    var diff = Math.floor((Date.now() - t) / 1000);  // 秒
+                    if (diff < 0) return '刚刚';                       // 未来时间兜底
+                    if (diff < 60) return '刚刚';
+                    if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+                    if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+                    if (diff < 86400 * 30) return Math.floor(diff / 86400) + ' 天前';
+                    return timeStr.substring(0, 10);                  // 超过一个月显示绝对日期
                 }
 
                 const filteredJobs = computed(function() {
@@ -398,6 +421,12 @@
                         showRegionDropdown.value = false;
                     });
 
+                    // 加载 _meta.json（不影响主流程：失败静默，仅 meta 显示为空）
+                    fetch('data/_meta.json?_v=' + Date.now())
+                        .then(function(r) { return r.ok ? r.json() : null; })
+                        .then(function(d) { if (d) meta.value = d; })
+                        .catch(function() { /* 静默：缺 _meta.json 时不阻断主流程 */ });
+
                     try {
                         var response = await fetch('data/all_jobs.json?_v=' + Date.now());
                         if (!response.ok) {
@@ -430,6 +459,7 @@
 
                     return {
                         jobs: jobs,
+                        meta: meta,
                         searchQuery: searchQuery,
                         selectedCategory: selectedCategory,
                         selectedRegion: selectedRegion,
@@ -451,6 +481,7 @@
                         selectProvince: selectProvince,
                         goPage: goPage,
                         switchNav: switchNav,
+                        formatRelative: formatRelative,
                     };
             }
         }).mount('#app');

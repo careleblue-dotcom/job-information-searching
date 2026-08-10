@@ -30,7 +30,7 @@ UNIVERSITY_SOURCES = [
         'category': '高校招聘',
     },
     {
-        'name': '南京医科大学马克思主义学院',
+        'name': '湖北理工学院马克思主义学院',
         'url': 'https://skb.hbpu.edu.cn/info/1043/3200.htm',
         'category': '高校招聘',
     },
@@ -55,11 +55,14 @@ def crawl_single_university(source):
     """爬取单个高校招聘信息"""
     logger.info('爬取高校招聘: %s - %s', source['name'], source['url'])
 
-    job_data = crawl_job_detail(source['url'], source['name'])
+    job_data = crawl_job_detail(
+        source['url'], source['name'],
+        partial_meta={'category': source['category']},
+    )
     if job_data:
         job_data['category'] = source['category']
         return job_data
-    return None
+    return None  # url 为空时仍可能返回 None
 
 
 def crawl_gaoxiaojob_list():
@@ -104,21 +107,14 @@ def crawl_gaoxiaojob_list():
 
     for item in known_pages:
         logger.info('处理: %s', item['title'][:50])
-        job_data = crawl_job_detail(item['url'], item['source'])
+        job_data = crawl_job_detail(
+            item['url'], item['source'],
+            partial_meta={'title': item['title'], 'category': '高校招聘'},
+        )
         if job_data:
             job_data['category'] = '高校招聘'
             jobs.append(job_data)
-        else:
-            # 保存基础信息
-            jobs.append({
-                'title': item['title'],
-                'url': item['url'],
-                'publish_date': '',
-                'category': '高校招聘',
-                'source': item['source'],
-                'region': '全国',
-                'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            })
+        # crawl_job_detail 现在总是返 dict(url 为空除外),无需手写 fallback
         time.sleep(DELAY)
 
     return jobs
@@ -128,11 +124,14 @@ def crawl_nju_marx():
     """爬取南京大学马克思主义学院招聘公告（独立爬取，因为页面结构特殊）"""
     logger.info('爬取南京大学马克思主义学院招聘')
     url = 'https://rczp.nju.edu.cn/zrjs/zrjsgwlb/20260317/i369629.html'
-    job_data = crawl_job_detail(url, '南京大学人才招聘网')
+    job_data = crawl_job_detail(
+        url, '南京大学人才招聘网',
+        partial_meta={'category': '高校招聘'},
+    )
     if job_data:
         job_data['category'] = '高校招聘'
         return job_data
-    return None
+    return None  # url 为空时仍可能返回 None
 
 
 def crawl_institute_marx():
@@ -162,20 +161,14 @@ def crawl_institute_marx():
 
     for item in cass_pages:
         logger.info('处理: %s', item['title'][:50])
-        job_data = crawl_job_detail(item['url'], item['source'])
+        job_data = crawl_job_detail(
+            item['url'], item['source'],
+            partial_meta={'title': item['title'], 'category': '事业单位'},
+        )
         if job_data:
             job_data['category'] = '事业单位'
             jobs.append(job_data)
-        else:
-            jobs.append({
-                'title': item['title'],
-                'url': item['url'],
-                'publish_date': '',
-                'category': '事业单位',
-                'source': item['source'],
-                'region': '全国',
-                'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            })
+        # crawl_job_detail 现在总是返 dict(url 为空除外),无需手写 fallback
         time.sleep(DELAY)
 
     return jobs

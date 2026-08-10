@@ -164,10 +164,36 @@ def test_crawl_job_detail_uses_fetch_and_parse(monkeypatch):
     assert job['title'] == '江苏省2026年应届优秀大学毕业生选调工作公告'
 
 
-def test_crawl_job_detail_returns_none_when_fetch_fails(monkeypatch):
-    """fetch 返回 None 时 crawl_job_detail 应返回 None，不抛异常。"""
+def test_crawl_job_detail_returns_partial_when_fetch_fails(monkeypatch):
+    """fetch 返回 None 时 crawl_job_detail 应返回 partial 兜底记录，不抛异常。
+
+    行为变更（旧→新）：
+      旧：返回 None → 列表里直接少一条记录，前端无感丢失
+      新：返回 quality='partial' 的兜底记录 → 前端可降级展示，URL 仍在
+    """
     monkeypatch.setattr('shared.fetch_page', lambda *a, **k: None)
-    assert crawl_job_detail('https://example.com', '测试') is None
+    job = crawl_job_detail('https://example.com/abc', '测试来源')
+    assert job is not None
+    assert job['quality'] == 'partial'
+    assert job['partial_reason']                    # 非空，说明失败原因
+    assert job['url'] == 'https://example.com/abc'
+    assert job['source'] == '测试来源'
+    assert job['content'] == ''                     # 没抓到详情内容
+
+
+def test_crawl_job_detail_uses_partial_meta_when_fetch_fails(monkeypatch):
+    """fetch 失败时，若调用方通过 partial_meta 传入列表页已知字段，应保留到兜底记录里。"""
+    monkeypatch.setattr('shared.fetch_page', lambda *a, **k: None)
+    job = crawl_job_detail(
+        'https://example.com/abc',
+        '测试来源',
+        partial_meta={'title': '已知标题', 'category': '选调生', 'publish_date': '2026-06-15'},
+    )
+    assert job is not None
+    assert job['quality'] == 'partial'
+    assert job['title'] == '已知标题'               # 不是兜底 '(标题待补)'
+    assert job['category'] == '选调生'
+    assert job['publish_date'] == '2026-06-15'      # parse_date 已规范化
 
 
 # ─── _normalize_title ──────────────────────────────

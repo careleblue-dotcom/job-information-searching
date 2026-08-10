@@ -1,3 +1,5 @@
+# 运行时依赖（仅爬虫 + 数据处理）
+# 开发/测试请用 requirements-dev.txt（包含本文件 + pytest）
 requests>=2.28.0
 beautifulsoup4>=4.11.0
 lxml>=4.9.0
