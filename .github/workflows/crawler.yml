@@ -33,7 +33,6 @@ jobs:
       - name: 运行列表页发现爬虫（数据持续增长核心）
         run: |
           python crawler_discover.py
-          python batch_crawler.py
           python crawler_university_marx.py
           python cleanup.py all
 
